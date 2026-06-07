@@ -45,9 +45,10 @@ CODEX_AGENT_FILENAMES: tuple[str, ...] = (
 )
 
 
-def _adapt_codex_skill_content(content: str) -> str:
+def _adapt_codex_skill_content(content: str, hpr_path: str = "hyperresearch") -> str:
     """Adapt canonical Claude skill text for Codex project skill installation."""
-    adapted = content.replace(".claude/skills/", ".agents/skills/")
+    adapted = content.replace("{hpr_path}", hpr_path)
+    adapted = adapted.replace(".claude/skills/", ".agents/skills/")
     adapted = adapted.replace(
         "hyperresearch install --steps-only . --json",
         "hyperresearch install --steps-only . --codex --json",
@@ -59,6 +60,8 @@ def _adapt_codex_skill_content(content: str) -> str:
     )
     adapted = adapted.replace("Task calls", "Codex custom-agent spawns")
     adapted = adapted.replace("Task call", "Codex custom-agent spawn")
+    adapted = adapted.replace("Task prompt", "custom-agent prompt")
+    adapted = adapted.replace("Task result", "custom-agent result")
     adapted = adapted.replace("Task tool", "Codex subagent workflow")
     adapted = re.sub(
         r"subagent_type: ([A-Za-z0-9_<>\-]+)",
@@ -78,19 +81,19 @@ def _write_skill_file(root: Path, skill_name: str, content: str, label: str) -> 
     return f"Codex: .agents/skills/{skill_name}/SKILL.md ({label})"
 
 
-def _install_codex_hyperresearch_skill(root: Path) -> str | None:
+def _install_codex_hyperresearch_skill(root: Path, hpr_path: str = "hyperresearch") -> str | None:
     content = _read_skill_source("hyperresearch.md")
     if content is None:
         return None
     return _write_skill_file(
         root,
         "hyperresearch",
-        _adapt_codex_skill_content(content),
+        _adapt_codex_skill_content(content, hpr_path),
         "$hyperresearch entry skill",
     )
 
 
-def _install_codex_hyperresearch_step_skills(root: Path) -> str | None:
+def _install_codex_hyperresearch_step_skills(root: Path, hpr_path: str = "hyperresearch") -> str | None:
     installed: list[str] = []
     for skill_name in _HYPERRESEARCH_STEP_SKILLS:
         content = _read_skill_source(f"{skill_name}.md")
@@ -99,7 +102,7 @@ def _install_codex_hyperresearch_step_skills(root: Path) -> str | None:
         result = _write_skill_file(
             root,
             skill_name,
-            _adapt_codex_skill_content(content),
+            _adapt_codex_skill_content(content, hpr_path),
             "V8 step skill",
         )
         if result:
@@ -167,7 +170,11 @@ def _adapt_agent_body_for_codex(body: str, tools: str) -> str:
         "report exists, make surgical edits only and never overwrite or "
         "regenerate the report wholesale.\n\n"
     )
-    adapted = body.replace("Task tool", "Codex subagent workflow")
+    adapted = body.replace("Task calls", "Codex custom-agent spawns")
+    adapted = adapted.replace("Task call", "Codex custom-agent spawn")
+    adapted = adapted.replace("Task prompt", "custom-agent prompt")
+    adapted = adapted.replace("Task result", "custom-agent result")
+    adapted = adapted.replace("Task tool", "Codex subagent workflow")
     adapted = adapted.replace("via the Task", "by spawning the matching Codex custom agent")
     adapted = re.sub(
         r"subagent_type: ([A-Za-z0-9_-]+)",
@@ -282,8 +289,8 @@ def install_codex_hooks(root: Path, hpr_path: str = "hyperresearch") -> list[str
     )
 
     for installer in (
-        lambda: _install_codex_hyperresearch_skill(root),
-        lambda: _install_codex_hyperresearch_step_skills(root),
+        lambda: _install_codex_hyperresearch_skill(root, hpr_posix),
+        lambda: _install_codex_hyperresearch_step_skills(root, hpr_posix),
     ):
         result = installer()
         if result:

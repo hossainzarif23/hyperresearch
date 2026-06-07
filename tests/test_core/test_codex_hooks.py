@@ -13,6 +13,13 @@ from hyperresearch.core.codex_hooks import (
 )
 from hyperresearch.core.hooks import _HYPERRESEARCH_STEP_SKILLS
 
+STALE_CLAUDE_MECHANICS = (
+    "Task call",
+    "Task calls",
+    "Task prompt",
+    "Task result",
+)
+
 
 def test_adapt_codex_skill_content_rewrites_claude_mechanics():
     source = (
@@ -36,8 +43,8 @@ def test_adapt_codex_skill_content_rewrites_claude_mechanics():
     assert ".claude/skills" not in adapted
     assert "Skill(skill:" not in adapted
     assert "Task tool" not in adapted
-    assert "Task call" not in adapted
-    assert "Task calls" not in adapted
+    for stale_term in STALE_CLAUDE_MECHANICS:
+        assert stale_term not in adapted
 
 
 def test_install_codex_entry_skill(tmp_vault):
@@ -56,7 +63,8 @@ def test_install_codex_entry_skill(tmp_vault):
 
 
 def test_install_codex_step_skills_creates_all_16(tmp_vault):
-    result = _install_codex_hyperresearch_step_skills(tmp_vault.root)
+    hpr_path = "C:/Tools/hpr.exe"
+    result = _install_codex_hyperresearch_step_skills(tmp_vault.root, hpr_path=hpr_path)
 
     assert result is not None
     skills_root = tmp_vault.root / ".agents" / "skills"
@@ -66,8 +74,9 @@ def test_install_codex_step_skills_creates_all_16(tmp_vault):
         body = skill_path.read_text(encoding="utf-8")
         assert f"name: {skill_name}" in body
         assert ".claude/skills" not in body
-        assert "Task call" not in body
-        assert "Task calls" not in body
+        assert "{hpr_path}" not in body
+        for stale_term in STALE_CLAUDE_MECHANICS:
+            assert stale_term not in body
         if skill_name != "hyperresearch-16-readability-audit":
             assert "$hyperresearch-" in body
 
@@ -101,6 +110,29 @@ def test_install_codex_hooks_registers_project_roster(tmp_path):
     assert not (tmp_path / "CLAUDE.md").exists()
     for filename in CODEX_AGENT_FILENAMES:
         assert (tmp_path / ".codex" / "agents" / filename).exists()
+
+
+def test_install_codex_hooks_writes_valid_custom_agent_toml(tmp_path):
+    result = install_codex_hooks(tmp_path, "C:/Tools/hpr.exe")
+
+    assert result
+    agents_root = tmp_path / ".codex" / "agents"
+    required_fields = {
+        "name",
+        "description",
+        "developer_instructions",
+        "model",
+        "model_reasoning_effort",
+    }
+    forbidden_terms = (*STALE_CLAUDE_MECHANICS, "{hpr_path}", "subagent_type:")
+    for filename in CODEX_AGENT_FILENAMES:
+        agent_path = agents_root / filename
+        assert agent_path.exists(), f"missing Codex custom agent: {filename}"
+        data = tomllib.loads(agent_path.read_text(encoding="utf-8"))
+        assert required_fields <= data.keys()
+        instructions = data["developer_instructions"]
+        for forbidden_term in forbidden_terms:
+            assert forbidden_term not in instructions
 
 
 def test_install_codex_hooks_idempotent(tmp_vault):

@@ -54,6 +54,8 @@ Subagents are delegated through {subagent_mechanic}.
 {end_marker}
 ```
 
+This snippet is illustrative only. The real template must start from the full current `HYPERRESEARCH_BLURB` content, not from a shortened replacement. Only runtime-specific phrases should become placeholders. No substantive Claude guidance may be removed while moving the prose into the template.
+
 `src/hyperresearch/core/agent_docs.py` should own only:
 
 - loading the template with `importlib.resources`
@@ -89,7 +91,14 @@ The generated Codex doc must not use `.claude/skills`, `/hyperresearch`, or `Tas
 
 ## Required Shared Content
 
-The template must preserve the same substantive guidance currently present in Claude `CLAUDE.md`:
+The template must preserve the complete substantive guidance currently present in Claude `CLAUDE.md`. The migration path is:
+
+1. Move the full current `HYPERRESEARCH_BLURB` body into `src/hyperresearch/templates/agent_docs/hyperresearch_project.md`.
+2. Replace only runtime-specific terms with explicit placeholders.
+3. Render Claude output with the same meaning and sections as today's `CLAUDE.md`.
+4. Render Codex output with the same meaning and sections, but Codex-native mechanics.
+
+At minimum, both runtime renders must preserve:
 
 - exact CLI path
 - current-working-directory path convention
@@ -109,6 +118,8 @@ The template must preserve the same substantive guidance currently present in Cl
 - note lifecycle and summary quality
 - markdown/vault conventions
 - final report patch-only revision invariant
+
+Tests should fail if any current `HYPERRESEARCH_BLURB` heading or load-bearing section is omitted from either runtime render.
 
 The template may add Codex-specific trust/config wording only through runtime-specific placeholders or clearly scoped runtime notes.
 

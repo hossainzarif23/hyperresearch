@@ -50,32 +50,35 @@ def _runtime_context(runtime: AgentDocsRuntime, hpr_path: str, today: str) -> di
             "spawn_contract": "every Task call passes the verbatim research_query + pipeline position + inputs",
         }
 
-    return {
-        "marker": CODEX_HYPERRESEARCH_SECTION_MARKER,
-        "end_marker": CODEX_HYPERRESEARCH_SECTION_END,
-        "heading": "Hyperresearch Codex Project Instructions",
-        "hpr": hpr_path,
-        "cli_path_note": "- use this exact path for every hyperresearch command.",
-        "runtime_intro": (
-            "This repository is trusted for Codex project configuration under `.codex/`. Codex support is additive "
-            "to Claude Code support and uses the same V8 source material.\n\n"
-            f"Run `{hpr_path} install --steps-only . --codex --json` to provision Codex-facing skills, agents, and hooks/config. "
-            "The entry skill lives at `.agents/skills/hyperresearch/SKILL.md`; Codex subagent definitions live under `.codex/agents/`."
-        ),
-        "runtime_invariants": (
-            "The canonical research query is persisted at `research/query-<vault_tag>.md` and is gospel for every "
-            "downstream step and subagent. Markdown is truth and SQLite is cache; do not make the database "
-            "authoritative for note content.\n\n"
-            "After `research/notes/final_report_<vault_tag>.md` exists, PATCH, NEVER REGENERATE. Patcher and polish "
-            "agents may revise by targeted edits only and must not overwrite or regenerate the report wholesale."
-        ),
-        "entry_command": "$hyperresearch <query>",
-        "entry_skill_path": ".agents/skills/hyperresearch/SKILL.md",
-        "step_loading_mechanism": (
-            "step-specific skill invocations plus the matching Codex custom-agent spawn when a role needs fresh context"
-        ),
-        "spawn_contract": "every Codex custom-agent spawn passes the verbatim research_query + pipeline position + inputs",
-    }
+    if runtime == "codex":
+        return {
+            "marker": CODEX_HYPERRESEARCH_SECTION_MARKER,
+            "end_marker": CODEX_HYPERRESEARCH_SECTION_END,
+            "heading": "Hyperresearch Codex Project Instructions",
+            "hpr": hpr_path,
+            "cli_path_note": "- use this exact path for every hyperresearch command.",
+            "runtime_intro": (
+                "This repository is trusted for Codex project configuration under `.codex/`. Codex support is additive "
+                "to Claude Code support and uses the same V8 source material.\n\n"
+                f"Run `{hpr_path} install --steps-only . --codex --json` to provision Codex-facing skills, agents, and hooks/config. "
+                "The entry skill lives at `.agents/skills/hyperresearch/SKILL.md`; Codex subagent definitions live under `.codex/agents/`."
+            ),
+            "runtime_invariants": (
+                "The canonical research query is persisted at `research/query-<vault_tag>.md` and is gospel for every "
+                "downstream step and subagent. Markdown is truth and SQLite is cache; do not make the database "
+                "authoritative for note content.\n\n"
+                "After `research/notes/final_report_<vault_tag>.md` exists, PATCH, NEVER REGENERATE. Patcher and polish "
+                "agents may revise by targeted edits only and must not overwrite or regenerate the report wholesale."
+            ),
+            "entry_command": "$hyperresearch <query>",
+            "entry_skill_path": ".agents/skills/hyperresearch/SKILL.md",
+            "step_loading_mechanism": (
+                "step-specific skill invocations plus the matching Codex custom-agent spawn when a role needs fresh context"
+            ),
+            "spawn_contract": "every Codex custom-agent spawn passes the verbatim research_query + pipeline position + inputs",
+        }
+
+    raise ValueError(f"Unknown agent docs runtime: {runtime}")
 
 
 def render_agent_docs(
@@ -87,7 +90,8 @@ def render_agent_docs(
         from datetime import date
 
         today = date.today().isoformat()
-    return _read_project_doc_template().format(**_runtime_context(runtime, hpr_path, today))
+    hpr_path = hpr_path.replace("\\", "/")
+    return _read_project_doc_template().format(**_runtime_context(runtime, hpr_path, today)).strip()
 
 
 def _resolve_executable() -> str:

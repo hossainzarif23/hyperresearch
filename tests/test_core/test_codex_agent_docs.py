@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
+import pytest
+
 from hyperresearch.core.agent_docs import (
     CODEX_HYPERRESEARCH_SECTION_END,
     CODEX_HYPERRESEARCH_SECTION_MARKER,
@@ -85,6 +89,24 @@ def test_render_agent_docs_uses_runtime_specific_mechanics():
     assert "Task call" not in codex
     assert "Task calls" not in codex
     assert "Task tool" not in codex
+
+
+def test_render_agent_docs_normalizes_windows_hpr_path_for_direct_calls():
+    body = render_agent_docs("codex", hpr_path=r"C:\Tools\hyperresearch.exe", today="2026-06-07")
+
+    assert "C:/Tools/hyperresearch.exe" in body
+    assert r"C:\Tools" not in body
+
+
+def test_render_agent_docs_returns_stripped_output_for_direct_calls():
+    body = render_agent_docs("codex", hpr_path="hyperresearch", today="2026-06-07")
+
+    assert body == body.strip()
+
+
+def test_render_agent_docs_rejects_unknown_runtime():
+    with pytest.raises(ValueError, match="Unknown agent docs runtime"):
+        render_agent_docs(cast(Any, "gemini"))
 
 
 def test_inject_codex_agent_docs_creates_agents_md(tmp_path, monkeypatch):

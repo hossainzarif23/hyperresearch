@@ -124,19 +124,34 @@ def config_get(
 @app.command("agent-docs")
 def config_agent_docs(
     json_output: bool = typer.Option(False, "--json", "-j", help="JSON output"),
+    claude: bool = typer.Option(False, "--claude", help="Update Claude Code CLAUDE.md."),
+    codex: bool = typer.Option(False, "--codex", help="Update Codex AGENTS.md."),
 ) -> None:
-    """Update CLAUDE.md with the latest hyperresearch blurb."""
-    from hyperresearch.core.agent_docs import inject_agent_docs
+    """Update runtime agent docs with the latest hyperresearch blurb."""
+    if claude and codex:
+        console.print("[red]Choose only one runtime: --claude or --codex.[/]")
+        raise typer.Exit(1)
+
+    runtime = "codex" if codex else "claude"
     from hyperresearch.core.vault import Vault
 
     vault = Vault.discover()
-    modified = inject_agent_docs(vault.root)
+    if runtime == "codex":
+        from hyperresearch.core.agent_docs import inject_codex_agent_docs
+
+        modified = inject_codex_agent_docs(vault.root)
+        target = "AGENTS.md"
+    else:
+        from hyperresearch.core.agent_docs import inject_agent_docs
+
+        modified = inject_agent_docs(vault.root)
+        target = "CLAUDE.md"
 
     if json_output:
-        output(success({"modified": modified}, vault=str(vault.root)), json_mode=True)
+        output(success({"modified": modified, "runtime": runtime}, vault=str(vault.root)), json_mode=True)
     else:
         if modified:
             for m in modified:
                 console.print(f"  [green]{m}[/]")
         else:
-            console.print("[dim]CLAUDE.md already up to date.[/]")
+            console.print(f"[dim]{target} already up to date.[/]")

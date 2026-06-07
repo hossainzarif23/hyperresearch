@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import json
+import sys
+from contextlib import contextmanager
 from pathlib import Path
 
-import click.testing
 import pytest
 from typer.testing import CliRunner
 
@@ -13,6 +14,29 @@ from hyperresearch.cli import app
 from hyperresearch.core.hooks import _HYPERRESEARCH_STEP_SKILLS
 
 runner = CliRunner()
+
+
+class _TtyStdin:
+    def __init__(self, stream):
+        self._stream = stream
+
+    def isatty(self):
+        return True
+
+    def __getattr__(self, name):
+        return getattr(self._stream, name)
+
+
+class _TtyCliRunner(CliRunner):
+    @contextmanager
+    def isolation(self, *args, **kwargs):
+        with super().isolation(*args, **kwargs) as streams:
+            original_stdin = sys.stdin
+            sys.stdin = _TtyStdin(original_stdin)
+            try:
+                yield streams
+            finally:
+                sys.stdin = original_stdin
 
 
 @pytest.fixture(autouse=True)
@@ -75,26 +99,40 @@ def test_install_json_defaults_to_claude_behavior(tmp_path: Path):
     result = runner.invoke(app, ["install", str(target), "--json"])
 
     data = _json_data(result)
-    assert data.get("runtime", "claude") == "claude"
+    assert data["runtime"] == "claude"
     assert (target / "CLAUDE.md").exists()
     assert (target / ".claude" / "skills" / "hyperresearch" / "SKILL.md").exists()
     assert not (target / "AGENTS.md").exists()
     assert not (target / ".codex" / "agents").exists()
 
 
-def test_interactive_new_vault_codex_install_stays_on_codex_path(
+def test_install_global_codex_json_uses_codex_home_locations(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    target = tmp_path / "interactive-codex-vault"
-    monkeypatch.setattr(
-        click.testing._NamedTextIOWrapper,
-        "isatty",
-        lambda self: True,
-        raising=False,
-    )
+    monkeypatch.setattr("hyperresearch.cli.install.Path.home", lambda: tmp_path)
 
-    result = runner.invoke(
+    result = runner.invoke(app, ["install", "--global", "--codex", "--json"])
+
+    data = _json_data(result)
+    assert data["runtime"] == "codex"
+    assert data["global"] is True
+    assert data["home"] == str(tmp_path)
+    assert (tmp_path / ".codex" / "AGENTS.md").exists()
+    assert (tmp_path / ".agents" / "skills" / "hyperresearch" / "SKILL.md").exists()
+    assert (
+        tmp_path / ".codex" / "agents" / "hyperresearch-patcher.toml"
+    ).exists()
+    assert not (tmp_path / ".claude").exists()
+
+
+def test_interactive_new_vault_codex_install_stays_on_codex_path(
+    tmp_path: Path,
+):
+    target = tmp_path / "interactive-codex-vault"
+    tty_runner = _TtyCliRunner()
+
+    result = tty_runner.invoke(
         app,
         ["install", str(target), "--codex"],
         input="\n",

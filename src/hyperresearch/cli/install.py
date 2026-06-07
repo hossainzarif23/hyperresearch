@@ -136,7 +136,7 @@ def install(
     # First-time install in an interactive terminal → run the setup TUI instead
     is_new = not (root / ".hyperresearch").exists()
     is_interactive = not json_output and sys.stdin.isatty()
-    if is_new and is_interactive:
+    if is_new and is_interactive and not codex:
         from hyperresearch.cli.setup import setup
 
         setup(path=path, json_output=False)

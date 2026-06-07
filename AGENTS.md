@@ -69,17 +69,21 @@ $env:PYTHONUTF8 = "1"
 
 ## Superpowers Workflow
 
-Use the Superpowers plugin workflow for this development.
+Use the original `obra/superpowers` workflow for this development. Superpowers is a methodology, not a loose checklist. The agent must check for relevant skills before every task, and applicable skills are mandatory.
 
-- Before multi-step design or implementation, use the relevant Superpowers skill.
-- For implementation planning, use `superpowers:writing-plans` and save plans under `docs/superpowers/plans/`.
-- For executing a written plan, use `superpowers:executing-plans` or `superpowers:subagent-driven-development` when subagents are available.
-- For complex debugging, use `superpowers:systematic-debugging`.
-- For code changes with behavioral risk, use `superpowers:test-driven-development`.
-- Before claiming completion, use `superpowers:verification-before-completion` and run fresh verification commands.
-- Before finishing a branch, use `superpowers:finishing-a-development-branch`.
+Follow this sequence for feature work:
 
-Do not skip the workflow because a task seems small. If a Superpowers skill applies, follow it.
+1. **Brainstorm before code.** Use `brainstorming` when the request is still a rough idea or design problem. Ask targeted questions, explore alternatives, present the design in readable sections, and get human approval before implementation planning.
+2. **Create an isolated workspace after design approval.** Use `using-git-worktrees` before implementation work. Create or verify a separate branch/worktree, run project setup, and verify a clean baseline.
+3. **Write the implementation plan from the approved design.** Use `writing-plans`. Save the plan under `docs/superpowers/plans/`. The plan must break work into 2-5 minute tasks with exact files, concrete code or command snippets, and verification steps.
+4. **Execute the written plan.** Prefer `subagent-driven-development` when subagents are available: dispatch a fresh subagent per task, then do the two-stage review for spec compliance and code quality. Use `executing-plans` only when inline batch execution is more appropriate or subagents are unavailable.
+5. **Use TDD during implementation.** Use `test-driven-development` for behavior changes: write the failing test, see it fail, write the minimum implementation, see it pass, refactor, and commit. If production code was written before the test, delete or revert it and restart the red/green cycle.
+6. **Review between tasks.** Use `requesting-code-review` between completed engineering tasks. Critical issues block progress until fixed.
+7. **Finish the branch deliberately.** Use `finishing-a-development-branch` when planned tasks are complete. Run fresh verification, then present the options to merge, open a PR, keep the branch, or discard the worktree.
+
+Use `systematic-debugging` for bugs and failing tests. Use `verification-before-completion` before any claim that work is complete, fixed, passing, or ready for PR. Evidence comes before status claims.
+
+Do not skip the workflow because a task seems small. Do not jump from idea directly to implementation unless the request is truly a narrow mechanical edit and no Superpowers skill applies.
 
 ## Codex Port Strategy
 
@@ -154,4 +158,3 @@ When benchmark work begins:
 - Include a concise PR summary of behavior, test coverage, and benchmark status.
 - If benchmark parity has not yet been run, say that explicitly.
 - Never describe Codex integration as complete until the full 16-step pipeline has been exercised end to end in Codex and verified against the artifact/lint contract.
-

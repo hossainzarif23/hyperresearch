@@ -126,7 +126,7 @@ CODEX_HYPERRESEARCH_BLURB = """
 
 This repository is trusted for Codex project configuration under `.codex/`. Codex support is additive to Claude Code support and uses the same V8 source material.
 
-Run `hyperresearch install --steps-only . --codex --json` to provision Codex-facing skills, agents, and hooks/config. The entry skill lives at `.agents/skills/hyperresearch/SKILL.md`; Codex subagent definitions live under `.codex/agents/`.
+Run `{hpr} install --steps-only . --codex --json` to provision Codex-facing skills, agents, and hooks/config. The entry skill lives at `.agents/skills/hyperresearch/SKILL.md`; Codex subagent definitions live under `.codex/agents/`.
 
 The V8 route sequences are:
 - light: 1 -> 2 -> 10 -> 15 -> 16

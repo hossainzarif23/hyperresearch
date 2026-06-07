@@ -25,7 +25,10 @@ def test_inject_codex_agent_docs_creates_agents_md(tmp_path, monkeypatch):
     assert ".codex/agents/" in body
     assert "research/query-<vault_tag>.md" in body
     assert "PATCH, NEVER REGENERATE" in body
-    assert "--steps-only . --codex --json" in body
+    assert (
+        "C:/venv/Scripts/hyperresearch.exe install --steps-only . --codex --json"
+        in body
+    )
     assert "C:/venv/Scripts/hyperresearch.exe" in body
     assert not (tmp_path / "CLAUDE.md").exists()
 

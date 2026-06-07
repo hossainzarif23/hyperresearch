@@ -92,7 +92,7 @@ def test_install_codex_patcher_agent_uses_toml_schema(tmp_vault):
     assert "description" in data
     assert "developer_instructions" in data
     assert data["model"] == "gpt-5.5"
-    assert data["model_reasoning_effort"] == "high"
+    assert data["model_reasoning_effort"] == "medium"
     instructions = data["developer_instructions"]
     assert "tools: Read, Edit" not in instructions
     assert "Codex custom-agent note" in instructions
@@ -133,6 +133,29 @@ def test_install_codex_hooks_writes_valid_custom_agent_toml(tmp_path):
         instructions = data["developer_instructions"]
         for forbidden_term in forbidden_terms:
             assert forbidden_term not in instructions
+
+
+def test_install_codex_hooks_applies_custom_agent_model_policy(tmp_path):
+    install_codex_hooks(tmp_path, "hyperresearch")
+
+    agents_root = tmp_path / ".codex" / "agents"
+    patcher = tomllib.loads((agents_root / "hyperresearch-patcher.toml").read_text(encoding="utf-8"))
+    polish = tomllib.loads((agents_root / "hyperresearch-polish-auditor.toml").read_text(encoding="utf-8"))
+    fetcher = tomllib.loads((agents_root / "hyperresearch-fetcher.toml").read_text(encoding="utf-8"))
+    draft = tomllib.loads((agents_root / "hyperresearch-draft-orchestrator.toml").read_text(encoding="utf-8"))
+    synthesizer = tomllib.loads((agents_root / "hyperresearch-synthesizer.toml").read_text(encoding="utf-8"))
+
+    assert patcher["model"] == "gpt-5.5"
+    assert patcher["model_reasoning_effort"] == "medium"
+    assert polish["model"] == "gpt-5.5"
+    assert polish["model_reasoning_effort"] == "medium"
+
+    assert fetcher["model"] == "gpt-5.4-mini"
+    assert fetcher["model_reasoning_effort"] == "medium"
+    assert draft["model"] == "gpt-5.4-mini"
+    assert draft["model_reasoning_effort"] == "medium"
+    assert synthesizer["model"] == "gpt-5.4-mini"
+    assert synthesizer["model_reasoning_effort"] == "medium"
 
 
 def test_install_codex_hooks_idempotent(tmp_vault):

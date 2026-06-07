@@ -146,17 +146,14 @@ def _extract_frontmatter(content: str) -> tuple[dict[str, str], str]:
     return data, content[end + 5 :]
 
 
-def _codex_model_for(agent_name: str, claude_model: str) -> tuple[str, str]:
-    high_reasoning_roles = (
-        "patcher",
-        "polish",
-        "critic",
-        "synthesizer",
-        "draft-orchestrator",
-    )
-    if claude_model == "opus" or any(role in agent_name for role in high_reasoning_roles):
-        return "gpt-5.5", "high"
-    return "gpt-5.5", "medium"
+def _codex_model_for(agent_name: str, _claude_model: str) -> tuple[str, str]:
+    coding_agents = {
+        "hyperresearch-patcher",
+        "hyperresearch-polish-auditor",
+    }
+    if agent_name in coding_agents:
+        return "gpt-5.5", "medium"
+    return "gpt-5.4-mini", "medium"
 
 
 def _adapt_agent_body_for_codex(body: str, tools: str) -> str:

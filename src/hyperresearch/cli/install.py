@@ -25,8 +25,13 @@ def install(
         "--steps-only",
         help="Install only the 16 step skills to <PATH>/.claude/skills/. Used internally by the entry skill bootstrap on first /hyperresearch invocation in a project. Not normally invoked by users.",
     ),
+    codex: bool = typer.Option(
+        False,
+        "--codex",
+        help="Install Codex project/global/step assets instead of the default Claude Code assets.",
+    ),
 ) -> None:
-    """Install hyperresearch: init vault + inject CLAUDE.md + install Claude Code hooks."""
+    """Install hyperresearch: init vault + inject runtime docs + install agent assets."""
     import sys
 
     from hyperresearch.core.hooks import (
@@ -37,23 +42,37 @@ def install(
     from hyperresearch.core.vault import Vault, VaultError
 
     # Steps-only path: lazy install of the 16 step skills to a project's
-    # .claude/skills/. Called by the entry skill's bootstrap on first
+    # runtime skill directory. Called by the entry skill's bootstrap on first
     # /hyperresearch in a project (after a global install). Cheap no-op
     # on subsequent invocations.
     if steps_only:
         target = Path(path).resolve()
-        result = _install_hyperresearch_step_skills(target)
+        if codex:
+            from hyperresearch.core.codex_hooks import _install_codex_hyperresearch_step_skills
+
+            result = _install_codex_hyperresearch_step_skills(target)
+            skills_path = ".agents/skills"
+        else:
+            result = _install_hyperresearch_step_skills(target)
+            skills_path = ".claude/skills"
         if json_output:
             output(
-                success({"steps_installed": result, "target": str(target)}, vault=None),
+                success(
+                    {
+                        "steps_installed": result,
+                        "target": str(target),
+                        "runtime": "codex" if codex else "claude",
+                    },
+                    vault=None,
+                ),
                 json_mode=True,
             )
             return
         if result:
-            console.print(f"[green]Step skills installed:[/] {target}/.claude/skills/")
+            console.print(f"[green]Step skills installed:[/] {target}/{skills_path}/")
             console.print(f"  {result}")
         else:
-            console.print(f"[dim]Step skills already installed at {target}/.claude/skills/[/]")
+            console.print(f"[dim]Step skills already installed at {target}/{skills_path}/[/]")
         return
 
     # Global install path: only the user-level Claude Code entry skill +
@@ -66,31 +85,50 @@ def install(
 
         hpr_path = _resolve_executable()
         home = Path.home()
-        hook_actions = install_global_hooks(home, hpr_path=hpr_path)
+        if codex:
+            from hyperresearch.core.codex_hooks import install_global_codex_hooks
+
+            hook_actions = install_global_codex_hooks(home, hpr_path=hpr_path)
+            runtime_root = home / ".codex"
+            ready_message = "$hyperresearch is now available in Codex sessions."
+            first_run_message = (
+                "On first $hyperresearch run in a project, the vault, research/ folder, "
+                "and the 16 step skills are created in that project's .agents/."
+            )
+        else:
+            hook_actions = install_global_hooks(home, hpr_path=hpr_path)
+            runtime_root = home / ".claude"
+            ready_message = (
+                "/hyperresearch is now available in every Claude Code session."
+            )
+            first_run_message = (
+                "On first /hyperresearch run in a project, the vault, research/ folder, "
+                "and the 16 step skills are created in that project's .claude/."
+            )
 
         if json_output:
             output(
                 success(
-                    {"global": True, "home": str(home), "hooks_installed": hook_actions},
+                    {
+                        "global": True,
+                        "home": str(home),
+                        "hooks_installed": hook_actions,
+                        "runtime": "codex" if codex else "claude",
+                    },
                     vault=None,
                 ),
                 json_mode=True,
             )
             return
 
-        console.print(f"[green]Global install:[/] {home}/.claude/")
+        console.print(f"[green]Global install:[/] {runtime_root}/")
         if hook_actions:
             for action in hook_actions:
                 console.print(f"  {action}")
         else:
             console.print("[dim]All skills and agents already installed.[/]")
-        console.print(
-            "\n[bold]Ready.[/] /hyperresearch is now available in every Claude Code session."
-        )
-        console.print(
-            "[dim]On first /hyperresearch run in a project, the vault, research/ folder, "
-            "and the 16 step skills are created in that project's .claude/.[/]"
-        )
+        console.print(f"\n[bold]Ready.[/] {ready_message}")
+        console.print(f"[dim]{first_run_message}[/]")
         return
 
     root = Path(path).resolve()
@@ -124,11 +162,18 @@ def install(
 
     hpr_path = _resolve_executable()
 
-    # Step 3: Always re-inject CLAUDE.md (updates blurb + path)
-    doc_actions = inject_agent_docs(root)
+    # Step 3: Always re-inject runtime agent docs (updates blurb + path)
+    if codex:
+        from hyperresearch.core.agent_docs import inject_codex_agent_docs
+        from hyperresearch.core.codex_hooks import install_codex_hooks
 
-    # Step 4: Install Claude Code hook + skills + subagents
-    hook_actions = install_hooks(root, hpr_path=hpr_path)
+        doc_actions = inject_codex_agent_docs(root)
+        hook_actions = install_codex_hooks(root, hpr_path=hpr_path)
+    else:
+        doc_actions = inject_agent_docs(root)
+        hook_actions = install_hooks(root, hpr_path=hpr_path)
+
+    # Step 4: Install runtime hook/assets + skills + subagents
 
     # Step 3: Auto-configure crawl4ai if installed
     crawl4ai_status = _setup_crawl4ai(vault)
@@ -140,6 +185,7 @@ def install(
         "agent_docs": doc_actions,
         "hooks_installed": hook_actions,
         "crawl4ai": crawl4ai_status,
+        "runtime": "codex" if codex else "claude",
     }
 
     if json_output:
@@ -156,11 +202,11 @@ def install(
                 console.print(f"  {action}")
 
         if hook_actions:
-            console.print("[green]Hooks installed:[/]")
+            console.print("[green]Agent assets installed:[/]")
             for action in hook_actions:
                 console.print(f"  {action}")
         else:
-            console.print("[dim]All hooks already installed.[/]")
+            console.print("[dim]All agent assets already installed.[/]")
 
         if crawl4ai_status == "configured":
             console.print("[green]crawl4ai:[/] detected, set as default provider + browser ready")

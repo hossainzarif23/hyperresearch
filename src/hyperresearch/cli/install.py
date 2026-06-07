@@ -148,7 +148,7 @@ def install(
         vault_action = "existing"
     except VaultError:
         try:
-            vault = Vault.init(root, name=name)
+            vault = Vault.init(root, name=name, inject_claude_docs=not codex)
             vault_action = "created"
         except VaultError as e:
             if json_output:

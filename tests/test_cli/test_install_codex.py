@@ -64,6 +64,7 @@ def test_install_codex_json_creates_vault_and_codex_assets(tmp_path: Path):
     assert data["hooks_installed"]
     assert (target / ".hyperresearch").exists()
     assert (target / "AGENTS.md").exists()
+    assert not (target / "CLAUDE.md").exists()
     assert (target / ".agents" / "skills" / "hyperresearch" / "SKILL.md").exists()
     assert (
         target / ".codex" / "agents" / "hyperresearch-patcher.toml"
@@ -140,6 +141,7 @@ def test_interactive_new_vault_codex_install_stays_on_codex_path(
 
     assert result.exit_code == 0, result.output
     assert (target / "AGENTS.md").exists()
+    assert not (target / "CLAUDE.md").exists()
     assert (target / ".agents" / "skills" / "hyperresearch" / "SKILL.md").exists()
     assert (
         target / ".codex" / "agents" / "hyperresearch-patcher.toml"

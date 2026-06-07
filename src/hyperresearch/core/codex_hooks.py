@@ -57,9 +57,11 @@ def _adapt_codex_skill_content(content: str) -> str:
         lambda match: f"${match.group(1)}",
         adapted,
     )
+    adapted = adapted.replace("Task calls", "Codex custom-agent spawns")
+    adapted = adapted.replace("Task call", "Codex custom-agent spawn")
     adapted = adapted.replace("Task tool", "Codex subagent workflow")
     adapted = re.sub(
-        r"subagent_type: ([A-Za-z0-9_-]+)",
+        r"subagent_type: ([A-Za-z0-9_<>\-]+)",
         lambda match: f"spawn the Codex custom agent `{match.group(1)}`",
         adapted,
     )

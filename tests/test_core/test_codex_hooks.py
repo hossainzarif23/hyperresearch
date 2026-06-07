@@ -19,18 +19,25 @@ def test_adapt_codex_skill_content_rewrites_claude_mechanics():
         "If `.claude/skills/hyperresearch-1-decompose/SKILL.md` is missing, "
         "run `hyperresearch install --steps-only . --json`. "
         'Then call `Skill(skill: "hyperresearch-1-decompose")`. '
-        "Spawn via the Task tool with `subagent_type: hyperresearch-patcher`."
+        "Spawn via the Task tool with `subagent_type: hyperresearch-patcher`. "
+        "Use subagent_type: hyperresearch-<critic-name>-critic for each critic. "
+        "Every Task call passes the query. Batch Task calls carefully."
     )
 
     adapted = _adapt_codex_skill_content(source)
 
+    assert "Use subagent_type: hyperresearch-<critic-name>-critic for each critic." in source
+    assert "Every Task call passes the query. Batch Task calls carefully." in source
     assert ".agents/skills/hyperresearch-1-decompose/SKILL.md" in adapted
     assert "hyperresearch install --steps-only . --codex --json" in adapted
     assert "$hyperresearch-1-decompose" in adapted
     assert "spawn the Codex custom agent `hyperresearch-patcher`" in adapted
+    assert "spawn the Codex custom agent `hyperresearch-<critic-name>-critic`" in adapted
     assert ".claude/skills" not in adapted
     assert "Skill(skill:" not in adapted
     assert "Task tool" not in adapted
+    assert "Task call" not in adapted
+    assert "Task calls" not in adapted
 
 
 def test_install_codex_entry_skill(tmp_vault):
@@ -59,6 +66,8 @@ def test_install_codex_step_skills_creates_all_16(tmp_vault):
         body = skill_path.read_text(encoding="utf-8")
         assert f"name: {skill_name}" in body
         assert ".claude/skills" not in body
+        assert "Task call" not in body
+        assert "Task calls" not in body
         if skill_name != "hyperresearch-16-readability-audit":
             assert "$hyperresearch-" in body
 

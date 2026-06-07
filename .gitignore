@@ -23,7 +23,6 @@ draco-bench/
 # (agent templates).
 .claude/
 CLAUDE.md
-AGENTS.md
 GEMINI.md
 
 # Per-vault research output

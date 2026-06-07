@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from hyperresearch.core.agent_docs import (
-    HYPERRESEARCH_SECTION_END,
-    HYPERRESEARCH_SECTION_MARKER,
     CODEX_HYPERRESEARCH_SECTION_END,
     CODEX_HYPERRESEARCH_SECTION_MARKER,
+    HYPERRESEARCH_SECTION_END,
+    HYPERRESEARCH_SECTION_MARKER,
     inject_codex_agent_docs,
     render_agent_docs,
 )

@@ -288,13 +288,13 @@ def install_codex_hooks(root: Path, hpr_path: str = "hyperresearch") -> list[str
         ("hyperresearch-synthesizer.toml", SYNTHESIZER_AGENT, "synthesizer custom agent"),
     )
 
-    for installer in (
-        lambda: _install_codex_hyperresearch_skill(root, hpr_posix),
-        lambda: _install_codex_hyperresearch_step_skills(root, hpr_posix),
-    ):
-        result = installer()
-        if result:
-            actions.append(result)
+    result = _install_codex_hyperresearch_skill(root, hpr_posix)
+    if result:
+        actions.append(result)
+
+    result = _install_codex_hyperresearch_step_skills(root, hpr_posix)
+    if result:
+        actions.append(result)
 
     for filename, content, label in agent_specs:
         result = _install_agent(root, filename, content, label, hpr_posix)

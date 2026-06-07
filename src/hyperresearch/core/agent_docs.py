@@ -14,6 +14,8 @@ from pathlib import Path
 
 HYPERRESEARCH_SECTION_MARKER = "<!-- hyperresearch:start -->"
 HYPERRESEARCH_SECTION_END = "<!-- hyperresearch:end -->"
+CODEX_HYPERRESEARCH_SECTION_MARKER = "<!-- hyperresearch-codex:start -->"
+CODEX_HYPERRESEARCH_SECTION_END = "<!-- hyperresearch-codex:end -->"
 
 HYPERRESEARCH_BLURB = """
 {marker}
@@ -116,6 +118,26 @@ Summaries must be specific — "Mamba achieves linear-time sequence modeling via
 {end_marker}
 """
 
+CODEX_HYPERRESEARCH_BLURB = """
+{marker}
+## Hyperresearch Codex Project Instructions
+
+**CLI path: `{hpr}`** - use this exact path for every hyperresearch command.
+
+This repository is trusted for Codex project configuration under `.codex/`. Codex support is additive to Claude Code support and uses the same V8 source material.
+
+Run `hyperresearch install --steps-only . --codex --json` to provision Codex-facing skills, agents, and hooks/config. The entry skill lives at `.agents/skills/hyperresearch/SKILL.md`; Codex subagent definitions live under `.codex/agents/`.
+
+The V8 route sequences are:
+- light: 1 -> 2 -> 10 -> 15 -> 16
+- full: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16
+
+The canonical research query is persisted at `research/query-<vault_tag>.md` and is gospel for every downstream step and subagent. Markdown is truth and SQLite is cache; do not make the database authoritative for note content.
+
+After `research/notes/final_report_<vault_tag>.md` exists, PATCH, NEVER REGENERATE. Patcher and polish agents may revise by targeted edits only and must not overwrite or regenerate the report wholesale.
+{end_marker}
+"""
+
 
 
 def _resolve_executable() -> str:
@@ -175,14 +197,36 @@ def inject_agent_docs(vault_root: Path) -> list[str]:
     return modified
 
 
+def inject_codex_agent_docs(vault_root: Path) -> list[str]:
+    """Inject hyperresearch Codex docs into AGENTS.md at the vault root."""
+    hpr_path = _resolve_executable().replace("\\", "/")
+    blurb = CODEX_HYPERRESEARCH_BLURB.format(
+        marker=CODEX_HYPERRESEARCH_SECTION_MARKER,
+        end_marker=CODEX_HYPERRESEARCH_SECTION_END,
+        hpr=hpr_path,
+    )
+
+    modified: list[str] = []
+    result = _inject_into_file(vault_root / "AGENTS.md", blurb, "AGENTS.md")
+    if result:
+        modified.append(result)
+    return modified
+
+
 def _inject_into_file(filepath: Path, blurb: str, filename: str) -> str | None:
     """Inject the hyperresearch blurb into a single file. Returns action taken or None."""
+    marker = HYPERRESEARCH_SECTION_MARKER
+    end_marker = HYPERRESEARCH_SECTION_END
+    if CODEX_HYPERRESEARCH_SECTION_MARKER in blurb:
+        marker = CODEX_HYPERRESEARCH_SECTION_MARKER
+        end_marker = CODEX_HYPERRESEARCH_SECTION_END
+
     if filepath.exists():
         content = filepath.read_text(encoding="utf-8-sig")
 
-        if HYPERRESEARCH_SECTION_MARKER in content:
+        if marker in content:
             pattern = re.compile(
-                re.escape(HYPERRESEARCH_SECTION_MARKER) + r".*?" + re.escape(HYPERRESEARCH_SECTION_END),
+                re.escape(marker) + r".*?" + re.escape(end_marker),
                 re.DOTALL,
             )
             new_content = pattern.sub(lambda _: blurb.strip(), content)

@@ -5,6 +5,7 @@ import tomllib
 from hyperresearch.core.codex_hooks import (
     CODEX_AGENT_FILENAMES,
     _adapt_codex_skill_content,
+    _codex_model_for,
     _install_codex_hyperresearch_skill,
     _install_codex_hyperresearch_step_skills,
     _install_codex_patcher_agent,
@@ -139,6 +140,10 @@ def test_install_codex_hooks_applies_custom_agent_model_policy(tmp_path):
     install_codex_hooks(tmp_path, "hyperresearch")
 
     agents_root = tmp_path / ".codex" / "agents"
+    generated_agents = {
+        filename: tomllib.loads((agents_root / filename).read_text(encoding="utf-8"))
+        for filename in CODEX_AGENT_FILENAMES
+    }
     patcher = tomllib.loads((agents_root / "hyperresearch-patcher.toml").read_text(encoding="utf-8"))
     polish = tomllib.loads((agents_root / "hyperresearch-polish-auditor.toml").read_text(encoding="utf-8"))
     fetcher = tomllib.loads((agents_root / "hyperresearch-fetcher.toml").read_text(encoding="utf-8"))
@@ -150,12 +155,19 @@ def test_install_codex_hooks_applies_custom_agent_model_policy(tmp_path):
     assert polish["model"] == "gpt-5.5"
     assert polish["model_reasoning_effort"] == "medium"
 
-    assert fetcher["model"] == "gpt-5.4-mini"
+    assert fetcher["model"] == "gpt-5.4"
     assert fetcher["model_reasoning_effort"] == "medium"
-    assert draft["model"] == "gpt-5.4-mini"
+    assert draft["model"] == "gpt-5.5"
     assert draft["model_reasoning_effort"] == "medium"
-    assert synthesizer["model"] == "gpt-5.4-mini"
+    assert synthesizer["model"] == "gpt-5.5"
     assert synthesizer["model_reasoning_effort"] == "medium"
+    assert all(agent["model"] != "gpt-5.4-mini" for agent in generated_agents.values())
+
+
+def test_codex_model_for_maps_claude_model_tiers():
+    assert _codex_model_for("hyperresearch-patcher", "opus") == ("gpt-5.5", "medium")
+    assert _codex_model_for("hyperresearch-fetcher", "sonnet") == ("gpt-5.4", "medium")
+    assert _codex_model_for("hyperresearch-anything", "haiku") == ("gpt-5.4-mini", "medium")
 
 
 def test_install_codex_hooks_idempotent(tmp_vault):

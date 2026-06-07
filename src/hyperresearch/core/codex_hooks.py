@@ -146,14 +146,15 @@ def _extract_frontmatter(content: str) -> tuple[dict[str, str], str]:
     return data, content[end + 5 :]
 
 
-def _codex_model_for(agent_name: str, _claude_model: str) -> tuple[str, str]:
-    coding_agents = {
-        "hyperresearch-patcher",
-        "hyperresearch-polish-auditor",
-    }
-    if agent_name in coding_agents:
-        return "gpt-5.5", "medium"
-    return "gpt-5.4-mini", "medium"
+def _codex_model_for(agent_name: str, claude_model: str) -> tuple[str, str]:
+    del agent_name
+
+    codex_model = {
+        "opus": "gpt-5.5",
+        "sonnet": "gpt-5.4",
+        "haiku": "gpt-5.4-mini",
+    }.get(claude_model.strip().lower(), "gpt-5.4")
+    return codex_model, "medium"
 
 
 def _adapt_agent_body_for_codex(body: str, tools: str) -> str:
@@ -187,6 +188,7 @@ def _codex_agent_toml(content: str, hpr_path: str = "hyperresearch") -> str:
     description = frontmatter.get("description", f"Hyperresearch custom agent {name}.")
     tools = frontmatter.get("tools", "unspecified")
     model, reasoning = _codex_model_for(name, frontmatter.get("model", "sonnet"))
+    reasoning = frontmatter.get("reasoning", reasoning)
     instructions = _adapt_agent_body_for_codex(body, tools).replace("{hpr_path}", hpr_path)
     return "\n".join(
         (

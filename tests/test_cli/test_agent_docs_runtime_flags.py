@@ -57,3 +57,68 @@ def test_config_agent_docs_rejects_both_runtime_flags(tmp_path: Path, monkeypatc
 
     assert result.exit_code != 0
     assert "Choose only one runtime" in result.output
+
+
+def test_repair_docs_defaults_to_claude(tmp_path: Path, monkeypatch):
+    result = runner.invoke(app, ["install", str(tmp_path), "--json"])
+    assert result.exit_code == 0, result.output
+    (tmp_path / "CLAUDE.md").unlink()
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(
+        app,
+        ["repair", "--no-stub", "--no-enrich", "--no-promote", "--no-index", "--json"],
+    )
+
+    data = _json_data(result)
+    assert data["agent_docs_runtime"] == "claude"
+    assert (tmp_path / "CLAUDE.md").exists()
+    assert not (tmp_path / "AGENTS.md").exists()
+
+
+def test_repair_docs_codex_updates_agents_md(tmp_path: Path, monkeypatch):
+    result = runner.invoke(app, ["install", str(tmp_path), "--codex", "--json"])
+    assert result.exit_code == 0, result.output
+    (tmp_path / "AGENTS.md").unlink()
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(
+        app,
+        [
+            "repair",
+            "--no-stub",
+            "--no-enrich",
+            "--no-promote",
+            "--no-index",
+            "--codex",
+            "--json",
+        ],
+    )
+
+    data = _json_data(result)
+    assert data["agent_docs_runtime"] == "codex"
+    assert (tmp_path / "AGENTS.md").exists()
+    assert not (tmp_path / "CLAUDE.md").exists()
+
+
+def test_repair_docs_rejects_both_runtime_flags(tmp_path: Path, monkeypatch):
+    result = runner.invoke(app, ["install", str(tmp_path), "--json"])
+    assert result.exit_code == 0, result.output
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(
+        app,
+        [
+            "repair",
+            "--no-stub",
+            "--no-enrich",
+            "--no-promote",
+            "--no-index",
+            "--claude",
+            "--codex",
+            "--json",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "Choose only one runtime" in result.output

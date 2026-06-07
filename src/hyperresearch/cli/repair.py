@@ -15,7 +15,9 @@ def repair(
     enrich: bool = typer.Option(True, "--enrich/--no-enrich", help="Auto-tag and auto-summarize notes"),
     promote_notes: bool = typer.Option(True, "--promote/--no-promote", help="Auto-promote qualifying notes"),
     rebuild_index: bool = typer.Option(True, "--index/--no-index", help="Rebuild index pages"),
-    update_docs: bool = typer.Option(True, "--docs/--no-docs", help="Update CLAUDE.md"),
+    update_docs: bool = typer.Option(True, "--docs/--no-docs", help="Update runtime agent docs"),
+    claude: bool = typer.Option(False, "--claude", help="Update Claude Code CLAUDE.md when --docs is enabled."),
+    codex: bool = typer.Option(False, "--codex", help="Update Codex AGENTS.md when --docs is enabled."),
     json_output: bool = typer.Option(False, "--json", "-j", help="JSON output"),
 ) -> None:
     """Repair and rebuild the vault — full sync, fix broken links, promote notes, rebuild indexes."""
@@ -29,6 +31,11 @@ def repair(
         else:
             console.print(f"[red]Error:[/] {e}")
         raise typer.Exit(1)
+
+    if claude and codex:
+        console.print("[red]Choose only one runtime: --claude or --codex.[/]")
+        raise typer.Exit(1)
+    docs_runtime = "codex" if codex else "claude"
 
     report: dict = {}
 
@@ -225,9 +232,16 @@ def repair(
     if update_docs:
         if not json_output:
             console.print("[bold]6/6 Updating agent docs...[/]")
-        from hyperresearch.core.agent_docs import inject_agent_docs
-        modified = inject_agent_docs(vault.root)
+        if docs_runtime == "codex":
+            from hyperresearch.core.agent_docs import inject_codex_agent_docs
+
+            modified = inject_codex_agent_docs(vault.root)
+        else:
+            from hyperresearch.core.agent_docs import inject_agent_docs
+
+            modified = inject_agent_docs(vault.root)
         report["agent_docs"] = modified
+        report["agent_docs_runtime"] = docs_runtime
         if not json_output:
             if modified:
                 for m in modified:
@@ -235,6 +249,7 @@ def repair(
             else:
                 console.print("  Already up to date")
     else:
+        report["agent_docs_runtime"] = None
         if not json_output:
             console.print("[dim]6/6 Skipping agent docs[/]")
 

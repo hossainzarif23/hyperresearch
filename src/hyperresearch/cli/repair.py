@@ -32,9 +32,6 @@ def repair(
             console.print(f"[red]Error:[/] {e}")
         raise typer.Exit(1)
 
-    if claude and codex:
-        console.print("[red]Choose only one runtime: --claude or --codex.[/]")
-        raise typer.Exit(1)
     docs_runtime = "codex" if codex else "claude"
 
     report: dict = {}
@@ -230,6 +227,9 @@ def repair(
 
     # Step 5: Update agent docs
     if update_docs:
+        if claude and codex:
+            console.print("[red]Choose only one runtime: --claude or --codex.[/]")
+            raise typer.Exit(1)
         if not json_output:
             console.print("[bold]6/6 Updating agent docs...[/]")
         if docs_runtime == "codex":
@@ -249,7 +249,6 @@ def repair(
             else:
                 console.print("  Already up to date")
     else:
-        report["agent_docs_runtime"] = None
         if not json_output:
             console.print("[dim]6/6 Skipping agent docs[/]")
 

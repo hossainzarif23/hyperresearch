@@ -3,11 +3,17 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from typer.testing import CliRunner
 
 from hyperresearch.cli import app
 
 runner = CliRunner()
+
+
+@pytest.fixture(autouse=True)
+def _skip_crawl4ai_setup(monkeypatch):
+    monkeypatch.setattr("hyperresearch.cli.install._setup_crawl4ai", lambda vault: "not_installed")
 
 
 def _json_data(result):
@@ -122,3 +128,27 @@ def test_repair_docs_rejects_both_runtime_flags(tmp_path: Path, monkeypatch):
 
     assert result.exit_code != 0
     assert "Choose only one runtime" in result.output
+
+
+def test_repair_no_docs_ignores_runtime_flags_and_omits_runtime_json(tmp_path: Path, monkeypatch):
+    result = runner.invoke(app, ["install", str(tmp_path), "--json"])
+    assert result.exit_code == 0, result.output
+    monkeypatch.chdir(tmp_path)
+
+    result = runner.invoke(
+        app,
+        [
+            "repair",
+            "--no-stub",
+            "--no-enrich",
+            "--no-promote",
+            "--no-index",
+            "--no-docs",
+            "--claude",
+            "--codex",
+            "--json",
+        ],
+    )
+
+    data = _json_data(result)
+    assert "agent_docs_runtime" not in data

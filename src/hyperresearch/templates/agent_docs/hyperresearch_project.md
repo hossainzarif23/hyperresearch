@@ -96,7 +96,9 @@ Summaries must be specific — "Mamba achieves linear-time sequence modeling via
 ### Key conventions
 
 - Notes live in `research/notes/` as markdown with YAML frontmatter
+- Markdown is truth and SQLite is cache; do not make the database authoritative for note content
 - Link notes with `[[note-id]]` syntax
+- After `research/notes/final_report_<vault_tag>.md` exists, PATCH, NEVER REGENERATE. Revise the report by targeted edits only; do not overwrite or regenerate it wholesale
 - After editing `.md` files directly, run `{hpr} sync` to update the index
 - Run `{hpr} --help` for the full command list
 {end_marker}

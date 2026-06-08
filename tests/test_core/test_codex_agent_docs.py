@@ -47,6 +47,8 @@ def test_render_agent_docs_preserves_load_bearing_guidance_for_both_runtimes():
         "Do NOT use WebFetch for source pages",
         "The skill files own everything about how to research",
         "research/query-<vault_tag>.md",
+        "Markdown is truth and SQLite is cache",
+        "PATCH, NEVER REGENERATE",
         "Academic APIs before web search",
         "Semantic Scholar",
         "PDFs fetch directly",
@@ -83,12 +85,22 @@ def test_render_agent_docs_uses_runtime_specific_mechanics():
     assert ".agents/skills/hyperresearch/SKILL.md" in codex
     assert ".codex/agents/" in codex
     assert "Codex custom-agent spawn" in codex
+    assert "when a role needs fresh context" not in codex
 
     assert ".claude/skills" not in codex
     assert "/hyperresearch <query>" not in codex
     assert "Task call" not in codex
     assert "Task calls" not in codex
     assert "Task tool" not in codex
+
+
+def test_render_agent_docs_shares_invariants_across_runtimes():
+    claude = render_agent_docs("claude", hpr_path="C:/Tools/hyperresearch.exe", today="2026-06-07")
+    codex = render_agent_docs("codex", hpr_path="C:/Tools/hyperresearch.exe", today="2026-06-07")
+
+    for body in (claude, codex):
+        assert "Markdown is truth and SQLite is cache" in body
+        assert "PATCH, NEVER REGENERATE" in body
 
 
 def test_render_agent_docs_normalizes_windows_hpr_path_for_direct_calls():

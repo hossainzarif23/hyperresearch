@@ -65,15 +65,12 @@ def _runtime_context(runtime: AgentDocsRuntime, hpr_path: str, today: str) -> di
             ),
             "runtime_invariants": (
                 "The canonical research query is persisted at `research/query-<vault_tag>.md` and is gospel for every "
-                "downstream step and subagent. Markdown is truth and SQLite is cache; do not make the database "
-                "authoritative for note content.\n\n"
-                "After `research/notes/final_report_<vault_tag>.md` exists, PATCH, NEVER REGENERATE. Patcher and polish "
-                "agents may revise by targeted edits only and must not overwrite or regenerate the report wholesale."
+                "downstream step and subagent."
             ),
             "entry_command": "$hyperresearch <query>",
             "entry_skill_path": ".agents/skills/hyperresearch/SKILL.md",
             "step_loading_mechanism": (
-                "step-specific skill invocations plus the matching Codex custom-agent spawn when a role needs fresh context"
+                "Codex skill invocation / progressive disclosure when each step runs, plus the matching Codex custom-agent spawn for subagent roles"
             ),
             "spawn_contract": "every Codex custom-agent spawn passes the verbatim research_query + pipeline position + inputs",
         }

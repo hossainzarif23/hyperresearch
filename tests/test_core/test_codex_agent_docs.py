@@ -72,6 +72,10 @@ def test_render_agent_docs_uses_runtime_specific_mechanics():
     claude = render_agent_docs("claude", hpr_path="C:/Tools/hyperresearch.exe", today="2026-06-07")
     codex = render_agent_docs("codex", hpr_path="C:/Tools/hyperresearch.exe", today="2026-06-07")
 
+    for body in (claude, codex):
+        assert "loaded fresh into context" in body
+        assert "when each step runs" in body
+
     assert HYPERRESEARCH_SECTION_MARKER in claude
     assert HYPERRESEARCH_SECTION_END in claude
     assert "/hyperresearch <query>" in claude
@@ -86,6 +90,7 @@ def test_render_agent_docs_uses_runtime_specific_mechanics():
     assert ".codex/agents/" in codex
     assert "Codex custom-agent spawn" in codex
     assert "when a role needs fresh context" not in codex
+    assert "progressive disclosure" not in codex
 
     assert ".claude/skills" not in codex
     assert "/hyperresearch <query>" not in codex

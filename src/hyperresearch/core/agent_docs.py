@@ -70,7 +70,7 @@ def _runtime_context(runtime: AgentDocsRuntime, hpr_path: str, today: str) -> di
             "entry_command": "$hyperresearch <query>",
             "entry_skill_path": ".agents/skills/hyperresearch/SKILL.md",
             "step_loading_mechanism": (
-                "Codex skill invocation that loads each step procedure fresh into context when each step runs, plus the matching Codex custom-agent spawn for subagent roles"
+                "Codex skill invocation when each step runs, with each step procedure loaded fresh into context, plus the matching Codex custom-agent spawn for subagent roles"
             ),
             "spawn_contract": "every Codex custom-agent spawn passes the verbatim research_query + pipeline position + inputs",
         }

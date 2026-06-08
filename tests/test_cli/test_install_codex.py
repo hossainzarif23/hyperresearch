@@ -64,6 +64,14 @@ def test_install_codex_json_creates_vault_and_codex_assets(tmp_path: Path):
     assert data["hooks_installed"]
     assert (target / ".hyperresearch").exists()
     assert (target / "AGENTS.md").exists()
+    agents_body = (target / "AGENTS.md").read_text(encoding="utf-8")
+    assert "Do NOT use WebFetch for source pages" in agents_body
+    assert "Academic APIs before web search" in agents_body
+    assert "Curate after every session" in agents_body
+    assert ".agents/skills/hyperresearch/SKILL.md" in agents_body
+    assert ".claude/skills" not in agents_body
+    assert "/hyperresearch <query>" not in agents_body
+    assert "Task call" not in agents_body
     assert not (target / "CLAUDE.md").exists()
     assert (target / ".agents" / "skills" / "hyperresearch" / "SKILL.md").exists()
     assert (

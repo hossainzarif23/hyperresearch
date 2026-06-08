@@ -72,17 +72,18 @@ def config_set(
         console.print(f"[dim]Valid keys: {', '.join(key_map.keys())}[/]")
         raise typer.Exit(1)
 
+    coerced_value: str | bool = value
     # Type coercion
     if attr in ("auto_sync", "auto_build_index", "web_magic"):
-        value = value.lower() in ("true", "1", "yes")
+        coerced_value = value.lower() in ("true", "1", "yes")
 
-    setattr(config, attr, value)
+    setattr(config, attr, coerced_value)
     config.save(vault.config_path)
 
     if json_output:
-        output(success({"key": key, "value": value}, vault=str(vault.root)), json_mode=True)
+        output(success({"key": key, "value": coerced_value}, vault=str(vault.root)), json_mode=True)
     else:
-        console.print(f"[green]Set[/] {key} = {value}")
+        console.print(f"[green]Set[/] {key} = {coerced_value}")
 
 
 @app.command("get")

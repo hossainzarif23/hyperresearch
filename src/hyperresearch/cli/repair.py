@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from datetime import UTC
+from typing import Any
 
 import typer
 
 from hyperresearch.cli._output import console, output
+from hyperresearch.models.note import NoteStatus
 from hyperresearch.models.output import error, success
 
 
@@ -34,7 +36,7 @@ def repair(
 
     docs_runtime = "codex" if codex else "claude"
 
-    report: dict = {}
+    report: dict[str, Any] = {}
 
     # Step 1: Force sync — rebuild DB from all files
     if not json_output:
@@ -122,16 +124,16 @@ def repair(
                 if not meta.tags:
                     from hyperresearch.core.note import strip_markdown
                     body_plain = strip_markdown(body)
-                    suggested = auto_tag(body_plain, tag_vocab)
-                    if suggested:
-                        meta.tags = suggested
+                    suggested_tags = auto_tag(body_plain, tag_vocab)
+                    if suggested_tags:
+                        meta.tags = suggested_tags
                         changed = True
 
                 # Auto-summary if no summary
                 if not meta.summary or not meta.summary.strip():
-                    suggested = auto_summary(body)
-                    if suggested:
-                        meta.summary = suggested
+                    suggested_summary = auto_summary(body)
+                    if suggested_summary:
+                        meta.summary = suggested_summary
                         changed = True
 
                 if changed:
@@ -172,7 +174,7 @@ def repair(
             try:
                 fp = vault.root / row["path"]
                 meta, body = parse_frontmatter(fp.read_text(encoding="utf-8-sig"))
-                meta.status = "review"
+                meta.status = NoteStatus.REVIEW
                 meta.updated = datetime.now(UTC)
                 fp.write_text(serialize_frontmatter(meta) + "\n" + body, encoding="utf-8")
                 promoted_count += 1
@@ -191,7 +193,7 @@ def repair(
             try:
                 fp = vault.root / row["path"]
                 meta, body = parse_frontmatter(fp.read_text(encoding="utf-8-sig"))
-                meta.status = "evergreen"
+                meta.status = NoteStatus.EVERGREEN
                 meta.updated = datetime.now(UTC)
                 fp.write_text(serialize_frontmatter(meta) + "\n" + body, encoding="utf-8")
                 promoted_count += 1
